@@ -1,0 +1,42 @@
+# Yandex Cloud Load Testing — POST-запросы (Pandora).
+#
+# Загрузка в UI:
+#   "Файл конфигурации" → этот файл
+#   "Прикрепленные файлы" → post-ammo.txt
+#
+# Убедитесь, что модель обучена (/train/) перед запуском.
+# Профиль: step 1→10 RPS, шаг 1 RPS каждые 30 с.
+
+pandora:
+  enabled: true
+  package: yandextank.plugins.Pandora
+  config_content:
+    pools:
+      - id: HTTP
+        gun:
+          type: http
+          target: 158.160.91.139:80
+          ssl: false
+        ammo:
+          type: raw
+          file: post-ammo.txt
+        result:
+          type: phout
+          destination: ./phout.log
+        rps:
+          - type: step
+            from: 1
+            to: 10
+            step: 1
+            duration: 30s
+        startup:
+          type: once
+          times: 200
+        discard_overflow: true
+
+autostop:
+  enabled: true
+  package: yandextank.plugins.Autostop
+  autostop:
+    - instances(90%, 5s)
+    - limit(6m)

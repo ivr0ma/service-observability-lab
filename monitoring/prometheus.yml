@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Host OS metrics from Node Exporter running on the app VM (port 9100).
+  - job_name: "node_exporter"
+    static_configs:
+      - targets:
+          - "158.160.91.139:9100"
+
+  # Application metrics exposed by Django at /metrics/ (through nginx, port 80).
+  - job_name: "django_app"
+    metrics_path: "/metrics/"
+    static_configs:
+      - targets:
+          - "158.160.91.139:80"

@@ -1,0 +1,51 @@
+# Yandex Cloud Load Testing — GET-запросы (Pandora).
+#
+# Загрузка в UI:
+#   "Файл конфигурации" → этот файл
+#   "Прикрепленные файлы" → не нужны (URIs вшиты)
+#
+# Профиль: line 1→50 RPS за 3 мин, затем const 50 RPS 1 мин.
+
+pandora:
+  enabled: true
+  package: yandextank.plugins.Pandora
+  config_content:
+    pools:
+      - id: HTTP
+        gun:
+          type: http
+          target: 158.160.91.139:80
+          ssl: false
+        ammo:
+          type: uri
+          uris:
+            - /
+            - /similar/?url=https://en.wikipedia.org/wiki/The_Godfather&cnt=3
+            - /similar/?url=https://en.wikipedia.org/wiki/Pulp_Fiction&cnt=3
+            - /similar/?url=https://en.wikipedia.org/wiki/Schindler%27s_List&cnt=3
+            - /
+          headers:
+            - "[Host: 158.160.91.139]"
+            - "[Connection: keep-alive]"
+        result:
+          type: phout
+          destination: ./phout.log
+        rps:
+          - type: line
+            from: 1
+            to: 50
+            duration: 3m
+          - type: const
+            ops: 50
+            duration: 1m
+        startup:
+          type: once
+          times: 500
+        discard_overflow: true
+
+autostop:
+  enabled: true
+  package: yandextank.plugins.Autostop
+  autostop:
+    - instances(90%, 5s)
+    - limit(5m)

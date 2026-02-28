@@ -1,0 +1,126 @@
+x-django-common:
+  &django-common
+  build:
+    context: ./
+    dockerfile: Dockerfile
+  environment:
+    # Common env vars for all Django-based containers (django, celery, flower).
+    # PROMETHEUS_MULTIPROC_DIR is intentionally NOT here — only django needs it.
+    - NUM_ARTICLES_TRAIN=1000
+    - POSTGRES_HOST=postgres
+    - POSTGRES_PORT=5432
+    - POSTGRES_DB=postgres
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - FLOWER_UNAUTHENTICATED_API=true
+    - ALLOWED_HOSTS=localhost,158.160.91.139
+  volumes:
+    - ./data:/app/data
+    - static_data:/static
+  networks:
+    - django_network
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_data:/static
+    ports:
+      - 80:80
+    networks:
+      - django_network
+    depends_on:
+      - django
+
+  django:
+    <<: *django-common
+    ports:
+      - 8000
+    entrypoint: /app/scripts/entrypoint.sh
+    environment:
+      # Duplicate all common vars here + add PROMETHEUS_MULTIPROC_DIR.
+      # Docker Compose does not merge environment lists from anchors,
+      # so we must repeat them when overriding.
+      - NUM_ARTICLES_TRAIN=1000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - FLOWER_UNAUTHENTICATED_API=true
+      - ALLOWED_HOSTS=localhost,158.160.91.139
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+
+  postgres:
+    image: postgres:16
+    ports:
+      - 5432
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "postgres" ]
+      interval: 5s
+      retries: 5
+    networks:
+      - django_network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+      interval: 5s
+      retries: 5
+    networks:
+      - django_network
+
+  celery_worker:
+    <<: *django-common
+    command: [ "/app/scripts/celery.sh", "celery" ]
+    restart: always
+
+  flower_worker:
+    <<: *django-common
+    command: [ "/app/scripts/celery.sh", "flower" ]
+    restart: always
+    ports:
+      - 5555
+
+  # Node exporter — exposes host OS metrics (CPU, RAM, disk, …) on port 9100.
+  node_exporter:
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+volumes:
+  pg_data:
+  static_data:
+
+networks:
+  django_network:
+    driver: bridge

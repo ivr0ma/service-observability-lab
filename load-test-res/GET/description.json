@@ -1,0 +1,24 @@
+[
+    {
+        "id": "ff607hk4fqe1xyrdq48m",
+        "name": "get-test-line",
+        "description": "",
+        "status": "AUTOSTOPPED",
+        "agent": {
+            "id": "ff64mbbmm07e326rxfps",
+            "name": "load-agent-1"
+        },
+        "created_at": "2026-02-28T13:25:43.058020+00:00",
+        "finished_at": "2026-02-28T13:30:06.325238+00:00",
+        "created_by": "ajetejpisqgm0b140phl",
+        "target": {
+            "address": "158.160.91.139",
+            "port": 80
+        },
+        "generator": "PANDORA",
+        "config": {
+            "id": "ff65bvcse6vnzj9sbsxs",
+            "raw_content": "# Yandex Cloud Load Testing — GET-запросы (Pandora).\n#\n# Загрузка в UI:\n#   \"Файл конфигурации\" → этот файл\n#   \"Прикрепленные файлы\" → не нужны (URIs вшиты)\n#\n# Профиль: line 1→50 RPS за 3 мин, затем const 50 RPS 1 мин.\n\npandora:\n  enabled: true\n  package: yandextank.plugins.Pandora\n  config_content:\n    pools:\n      - id: HTTP\n        gun:\n          type: http\n          target: 158.160.91.139:80\n          ssl: false\n        ammo:\n          type: uri\n          uris:\n            - /\n            - /similar/?url=https://en.wikipedia.org/wiki/The_Godfather&cnt=3\n            - /similar/?url=https://en.wikipedia.org/wiki/Pulp_Fiction&cnt=3\n            - /similar/?url=https://en.wikipedia.org/wiki/Schindler%27s_List&cnt=3\n            - /\n          headers:\n            - \"[Host: 158.160.91.139]\"\n            - \"[Connection: keep-alive]\"\n        result:\n          type: phout\n          destination: ./phout.log\n        rps:\n          - type: line\n            from: 1\n            to: 50\n            duration: 3m\n          - type: const\n            ops: 50\n            duration: 1m\n        startup:\n          type: once\n          times: 500\n        discard_overflow: true\n\nautostop:\n  enabled: true\n  package: yandextank.plugins.Autostop\n  autostop:\n    - instances(90%, 5s)\n    - limit(5m)\n"
+        }
+    }
+]

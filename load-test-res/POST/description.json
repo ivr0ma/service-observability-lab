@@ -1,0 +1,24 @@
+[
+    {
+        "id": "ff65w4ykf6ew86vmt1fa",
+        "name": "test670",
+        "description": "",
+        "status": "FINISHED",
+        "agent": {
+            "id": "ff64mbbmm07e326rxfps",
+            "name": "load-agent-1"
+        },
+        "created_at": "2026-02-28T14:07:44.356383+00:00",
+        "finished_at": "2026-02-28T14:16:24.512386+00:00",
+        "created_by": "ajetejpisqgm0b140phl",
+        "target": {
+            "address": "158.160.91.139",
+            "port": 80
+        },
+        "generator": "PANDORA",
+        "config": {
+            "id": "ff6pmxf6cfwjeany7bj4",
+            "raw_content": "# Yandex Cloud Load Testing — POST-запросы (Pandora).\r\n#\r\n# Загрузка в UI:\r\n#   \"Файл конфигурации\" → этот файл\r\n#   \"Прикрепленные файлы\" → post-ammo.txt\r\n#\r\n# Убедитесь, что модель обучена (/train/) перед запуском.\r\n# Профиль: step 1→10 RPS, шаг 1 RPS каждые 30 с.\r\n\r\npandora:\r\n  enabled: true\r\n  package: yandextank.plugins.Pandora\r\n  config_content:\r\n    pools:\r\n      - id: HTTP\r\n        gun:\r\n          type: http\r\n          target: 158.160.91.139:80\r\n          ssl: false\r\n        ammo:\r\n          type: raw\r\n          file: post-ammo.txt\r\n        result:\r\n          type: phout\r\n          destination: ./phout.log\r\n        rps:\r\n          - type: step\r\n            from: 1\r\n            to: 10\r\n            step: 1\r\n            duration: 30s\r\n        startup:\r\n          type: once\r\n          times: 200\r\n        discard_overflow: true\r\n\r\nautostop:\r\n  enabled: true\r\n  package: yandextank.plugins.Autostop\r\n  autostop:\r\n    - instances(90%, 5s)\r\n    - limit(6m)\r\n"
+        }
+    }
+]
